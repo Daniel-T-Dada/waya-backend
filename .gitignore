@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables (SENSITIVE - DO NOT COMMIT)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Database
+data/
+*.db
+*.sqlite
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+.env.example_temp
+*.tmp
+
+
+documentations/
+
+# Prisma
+prisma/migrations/*_migration.sql
