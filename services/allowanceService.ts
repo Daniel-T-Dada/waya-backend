@@ -2,7 +2,7 @@ import { prisma } from '../prisma';
 import * as walletService from './walletService';
 import * as notificationService from './notificationService';
 import { notifyUser } from '../utils/socket';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Prisma } from '../generated/prisma/client.js';
 
 export enum AllowanceFrequency {
     DAILY = 'daily',
@@ -238,7 +238,7 @@ export async function processDueAllowances() {
                     where: { id: allowance.child.wallet!.id },
                     data: {
                         balance: { increment: allowance.amount },
-                        total_earned: { increment: allowance.amount }
+                        totalEarned: { increment: allowance.amount }
                     }
                 });
 
@@ -250,7 +250,7 @@ export async function processDueAllowances() {
                         status: 'completed',
                         description: `Allowance (${allowance.frequency})`,
                         childId: allowance.childId,
-                        wallet_id: parentWalletObj.id
+                        walletId: parentWalletObj.id
                     }
                 });
 

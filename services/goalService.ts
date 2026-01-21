@@ -4,7 +4,7 @@ import * as notificationService from './notificationService';
 import * as moneyMazeService from './moneyMazeService';
 import * as cacheService from './cacheService';
 import { notifyUser } from '../utils/socket';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Prisma } from '../generated/prisma/client.js';
 
 export interface CreateGoalData {
     title: string;
@@ -88,7 +88,7 @@ export async function addSavingsToGoal(childId: string, goalId: string, amount: 
             where: { id: goal.child.wallet!.id },
             data: {
                 balance: { decrement: amount },
-                total_spent: { increment: amount }
+                totalSpent: { increment: amount }
             }
         });
 
@@ -113,7 +113,7 @@ export async function addSavingsToGoal(childId: string, goalId: string, amount: 
                 status: 'completed',
                 description: `Savings for goal: ${goal.title}`,
                 childId: childId,
-                wallet_id: goal.child.wallet!.parent_wallet_id
+                walletId: goal.child.wallet!.parentWalletId
             }
         });
 
@@ -265,7 +265,7 @@ export async function getGoalRewards(childId: string) {
                 }
             }
         },
-        orderBy: { earned_at: 'desc' }
+        orderBy: { earnedAt: 'desc' }
     });
 
     const totalRewards = rewards.reduce((sum, r) => sum + Number(r.amount), 0);
@@ -278,7 +278,7 @@ export async function getGoalRewards(childId: string) {
             goalId: r.goalId,
             goal_title: r.goal.title,
             reward_amount: r.amount,
-            earned_at: r.earned_at
+            earned_at: r.earnedAt
         }))
     };
 }

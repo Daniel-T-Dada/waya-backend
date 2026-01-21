@@ -74,14 +74,14 @@ export async function getLeaderboard(req: Request, res: Response) {
         let parentId: string;
 
         if (userType === 'child') {
-            // If child, find their parent_id
+            // If child, find their parentId
             const childId = userId;
             const childInfo = await prisma.child.findUnique({
                 where: { id: childId },
-                select: { parent_id: true }
+                select: { parentId: true }
             });
             if (!childInfo) return res.status(404).json({ error: 'Child not found' });
-            parentId = childInfo.parent_id;
+            parentId = childInfo.parentId;
         } else {
             parentId = userId;
         }

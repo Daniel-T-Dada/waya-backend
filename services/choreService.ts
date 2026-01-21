@@ -295,7 +295,7 @@ export async function redeemChoreReward(choreId: string, childId: string) {
             where: { id: chore.child.wallet!.id },
             data: {
                 balance: Number(chore.child.wallet!.balance) + Number(chore.amount),
-                total_earned: Number(chore.child.wallet!.total_earned) + Number(chore.amount)
+                totalEarned: Number(chore.child.wallet!.totalEarned) + Number(chore.amount)
             }
         });
 
@@ -308,7 +308,7 @@ export async function redeemChoreReward(choreId: string, childId: string) {
                 description: `Reward for chore: ${chore.title}`,
                 childId: childId,
                 walletId: parentWallet.id,
-                chore_id: choreId
+                choreId: choreId
             }
         });
 

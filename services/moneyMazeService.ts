@@ -4,14 +4,14 @@ import * as notificationService from './notificationService';
 
 export async function listConcepts() {
     return prisma.concept.findMany({
-        where: { is_active: true },
+        where: { isActive: true },
         orderBy: { order: 'asc' }
     });
 }
 
 export async function getConceptProgress(childId: string) {
     const concepts = await prisma.concept.findMany({
-        where: { is_active: true },
+        where: { isActive: true },
         include: {
             quizzes: {
                 include: {
@@ -134,7 +134,7 @@ export async function submitQuiz(childId: string, quizId: string, answers: { que
                     where: { id: wallet.id },
                     data: {
                         balance: { increment: finalReward },
-                        total_earned: { increment: finalReward }
+                        totalEarned: { increment: finalReward }
                     }
                 });
 
@@ -146,7 +146,7 @@ export async function submitQuiz(childId: string, quizId: string, answers: { que
                         status: 'completed',
                         description: `MoneyMaze Reward: ${quiz.title}`,
                         childId: childId,
-                        wallet_id: wallet.parent_wallet_id // Use parent wallet ID as per schema requirement for transactions
+                        walletId: wallet.parentWalletId // Use parent wallet ID as per schema requirement for transactions
                     }
                 });
 
@@ -201,7 +201,7 @@ export async function updateStreak(childId: string, activityType: string) {
         await prisma.$transaction(async (tx) => {
             const child = await tx.child.findUnique({
                 where: { id: childId },
-                select: { current_streak: true, last_active_at: true }
+                select: { currentStreak: true, lastActiveAt: true }
             });
 
             if (!child) return;
@@ -221,13 +221,13 @@ export async function updateStreak(childId: string, activityType: string) {
                     data: {
                         childId: childId,
                         date: today,
-                        activity_type: activityType
+                        activityType: activityType
                     }
                 });
 
                 let newStreak = 1;
-                if (child.last_active_at) {
-                    const lastActive = new Date(child.last_active_at);
+                if (child.lastActiveAt) {
+                    const lastActive = new Date(child.lastActiveAt);
                     const lastActiveDay = new Date(Date.UTC(lastActive.getUTCFullYear(), lastActive.getUTCMonth(), lastActive.getUTCDate()));
 
                     const diffTime = today.getTime() - lastActiveDay.getTime();
@@ -235,10 +235,10 @@ export async function updateStreak(childId: string, activityType: string) {
 
                     if (diffDays === 1) {
                         // Consecutive day
-                        newStreak = child.current_streak + 1;
+                        newStreak = child.currentStreak + 1;
                     } else if (diffDays === 0) {
                         // Already active today, streak stays the same
-                        newStreak = child.current_streak;
+                        newStreak = child.currentStreak;
                     } else {
                         // Streak broken
                         newStreak = 1;
@@ -248,15 +248,15 @@ export async function updateStreak(childId: string, activityType: string) {
                 await tx.child.update({
                     where: { id: childId },
                     data: {
-                        current_streak: newStreak,
-                        last_active_at: now
+                        currentStreak: newStreak,
+                        lastActiveAt: now
                     }
                 });
             } else {
                 // Just update the timestamp if already active today
                 await tx.child.update({
                     where: { id: childId },
-                    data: { last_active_at: now }
+                    data: { lastActiveAt: now }
                 });
             }
         });
@@ -304,7 +304,7 @@ export async function getRewards(childId: string) {
                 select: { title: true }
             }
         },
-        orderBy: { earned_at: 'desc' }
+        orderBy: { earnedAt: 'desc' }
     });
 
     const total = rewards.reduce((sum, r) => sum + Number(r.amount), 0);
@@ -317,7 +317,7 @@ export async function getRewards(childId: string) {
             quiz: r.quizId,
             quiz_title: r.quiz.title,
             amount: r.amount,
-            earned_at: r.earned_at
+            earned_at: r.earnedAt
         }))
     };
 }
@@ -325,10 +325,10 @@ export async function getRewards(childId: string) {
 export async function getDashboard(childId: string) {
     const child = await prisma.child.findUnique({
         where: { id: childId },
-        select: { current_streak: true }
+        select: { currentStreak: true }
     });
 
-    const totalConcepts = await prisma.concept.count({ where: { is_active: true } });
+    const totalConcepts = await prisma.concept.count({ where: { isActive: true } });
     const passedAttempts = await prisma.quizAttempt.findMany({
         where: { childId: childId, passed: true },
         select: { quizId: true }
@@ -350,7 +350,7 @@ export async function getDashboard(childId: string) {
         total_quizzes: totalConcepts, // Assuming 1 quiz per concept for now
         passed_quizzes: uniquePassedQuizzes,
         total_rewards: (totalRewards._sum.amount || 0).toFixed(2),
-        current_streak: child?.current_streak || 0,
+        current_streak: child?.currentStreak || 0,
         weekly_activity: weeklyActivity,
         progress_percentage: progressPercentage,
         recent_achievements: [] // Achievements logic could be added later
