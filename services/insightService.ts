@@ -25,17 +25,17 @@ export async function getChoreInsights(parentId: string) {
 
     // Top performer
     const childPerformance = await prisma.chore.groupBy({
-        by: ['assigned_to'],
+        by: ['assignedTo'],
         where: { parentId: parentId, status: 'completed' },
         _count: true,
-        orderBy: { _count: { assigned_to: 'desc' } },
+        orderBy: { _count: { assignedTo: 'desc' } },
         take: 1
     });
 
     let topPerformer = null;
     if (childPerformance.length > 0) {
         const child = await prisma.child.findUnique({
-            where: { id: childPerformance[0].assigned_to },
+            where: { id: childPerformance[0].assignedTo },
             select: { id: true, name: true, username: true }
         });
         if (child) {

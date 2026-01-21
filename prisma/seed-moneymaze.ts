@@ -1,6 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma/client.js';
+import { PrismaPg } from '@prisma/adapter-pg';
+import 'dotenv/config';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
     console.log('Seeding MoneyMaze data...');
@@ -16,26 +19,26 @@ async function main() {
                 create: {
                     title: 'Saving Money Quiz',
                     description: 'Test your knowledge about the basics of saving.',
-                    passing_score: 70,
+                    passingScore: 70,
                     questions: {
                         create: [
                             {
-                                question_text: 'What is the best way to save money for something expensive?',
+                                questionText: 'What is the best way to save money for something expensive?',
                                 choices: {
                                     create: [
-                                        { choice_text: 'Buy it immediately on credit', is_correct: false },
-                                        { choice_text: 'Set a savings goal and put money aside regularly', is_correct: true },
-                                        { choice_text: 'Ask someone else to pay for it', is_correct: false }
+                                        { choiceText: 'Buy it immediately on credit', isCorrect: false },
+                                        { choiceText: 'Set a savings goal and put money aside regularly', isCorrect: true },
+                                        { choiceText: 'Ask someone else to pay for it', isCorrect: false }
                                     ]
                                 }
                             },
                             {
-                                question_text: 'What does interest mean in a savings account?',
+                                questionText: 'What does interest mean in a savings account?',
                                 choices: {
                                     create: [
-                                        { choice_text: 'A fee you pay the bank', is_correct: false },
-                                        { choice_text: 'Extra money the bank pays you for keeping your money there', is_correct: true },
-                                        { choice_text: 'The color of the bank building', is_correct: false }
+                                        { choiceText: 'A fee you pay the bank', isCorrect: false },
+                                        { choiceText: 'Extra money the bank pays you for keeping your money there', isCorrect: true },
+                                        { choiceText: 'The color of the bank building', isCorrect: false }
                                     ]
                                 }
                             }
@@ -56,26 +59,26 @@ async function main() {
                 create: {
                     title: 'Needs vs. Wants Quiz',
                     description: 'Can you tell what you really need from what you just want?',
-                    passing_score: 70,
+                    passingScore: 70,
                     questions: {
                         create: [
                             {
-                                question_text: 'Which of these is a "need"?',
+                                questionText: 'Which of these is a "need"?',
                                 choices: {
                                     create: [
-                                        { choice_text: 'A new video game', is_correct: false },
-                                        { choice_text: 'Healthy food', is_correct: true },
-                                        { choice_text: 'A designer T-shirt', is_correct: false }
+                                        { choiceText: 'A new video game', isCorrect: false },
+                                        { choiceText: 'Healthy food', isCorrect: true },
+                                        { choiceText: 'A designer T-shirt', isCorrect: false }
                                     ]
                                 }
                             },
                             {
-                                question_text: 'Why should you compare prices before buying something?',
+                                questionText: 'Why should you compare prices before buying something?',
                                 choices: {
                                     create: [
-                                        { choice_text: 'To spend more money', is_correct: false },
-                                        { choice_text: 'To make sure you are getting the best deal', is_correct: true },
-                                        { choice_text: 'To waste time', is_correct: false }
+                                        { choiceText: 'To spend more money', isCorrect: false },
+                                        { choiceText: 'To make sure you are getting the best deal', isCorrect: true },
+                                        { choiceText: 'To waste time', isCorrect: false }
                                     ]
                                 }
                             }

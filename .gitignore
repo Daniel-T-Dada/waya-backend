@@ -4,6 +4,9 @@ node_modules/
 # Build output
 dist/
 
+# Generated Prisma Client
+generated/
+
 # Environment variables (SENSITIVE - DO NOT COMMIT)
 .env
 .env.local
@@ -40,3 +43,5 @@ documentations/
 
 # Prisma
 prisma/migrations/*_migration.sql
+
+schema copy.prisma

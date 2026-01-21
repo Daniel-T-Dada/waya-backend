@@ -1,5 +1,4 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import 'dotenv/config';
 
 import express from 'express';
 import routes from './routes';
@@ -44,10 +43,12 @@ app.get('/', (_req, res) => res.json({ ok: true, message: 'Waya backend (TypeScr
 
 const port = process.env.PORT ? Number(process.env.PORT) : 5000;
 
-if (require.main === module) {
-    httpServer.listen(port, () => {
-        console.log(`Server listening on http://localhost:${port}`);
-    });
-}
+// In ESM, we check if this file is the entry point differently
+const isMainModule = import.meta.url === `file://${process.argv[1]?.replace(/\\/g, '/')}`;
+
+// Always start the server when run directly (not imported as module for serverless)
+httpServer.listen(port, () => {
+    console.log(`Server listening on http://localhost:${port}`);
+});
 
 export default app;

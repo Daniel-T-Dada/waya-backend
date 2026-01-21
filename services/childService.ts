@@ -1,5 +1,5 @@
-import { prisma } from '../prisma';
-import { Child } from '@prisma/client';
+import { prisma } from '../prisma.js';
+import { Child } from '../generated/prisma/client.js';
 import { hashPin, comparePin } from '../utils/hash';
 
 export interface CreateChildData {

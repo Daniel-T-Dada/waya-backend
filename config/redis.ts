@@ -1,7 +1,13 @@
 import { createClient } from 'redis';
 
+// Upstash requires TLS - ensure URL uses rediss:// protocol
+const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+const secureUrl = redisUrl.startsWith('redis://') && redisUrl.includes('upstash.io')
+    ? redisUrl.replace('redis://', 'rediss://')
+    : redisUrl;
+
 const redisClient = createClient({
-    url: process.env.REDIS_URL || 'redis://localhost:6379'
+    url: secureUrl
 });
 
 redisClient.on('error', (err) => console.error('Redis Client Error', err));

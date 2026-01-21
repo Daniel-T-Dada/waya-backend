@@ -4,7 +4,7 @@ import * as transactionService from './transactionService';
 import * as notificationService from './notificationService';
 import * as cacheService from './cacheService';
 import { notifyUser } from '../utils/socket';
-import { Decimal } from '@prisma/client/runtime/library';
+import { Prisma } from '../generated/prisma/client.js';
 
 // Get wallet by user ID
 export async function getWalletByUserId(userId: string) {
@@ -292,7 +292,7 @@ export async function getDashboardStats(userId: string) {
     });
 
     const childWallets = await prisma.childWallet.findMany({
-        where: { parent_walletId: wallet.id }
+        where: { parentWalletId: wallet.id }
     });
 
     const totalEarned = childWallets.reduce((sum, cw) => sum + Number(cw.totalEarned), 0);
@@ -329,7 +329,7 @@ export async function getChildWallets(userId: string) {
     const wallet = await getWalletByUserId(userId);
 
     const childWallets = await prisma.childWallet.findMany({
-        where: { parent_walletId: wallet.id },
+        where: { parentWalletId: wallet.id },
         include: {
             child: {
                 select: {
@@ -344,7 +344,7 @@ export async function getChildWallets(userId: string) {
     const result = childWallets.map(cw => ({
         id: cw.id,
         child: cw.childId,
-        child_name: (cw.child as any).name || (cw.child as any).username,
+        child_name: cw.child.name || cw.child.username,
         balance: cw.balance,
         totalEarned: cw.totalEarned,
         totalSpent: cw.totalSpent,
@@ -431,17 +431,17 @@ export async function getSavingsBreakdown(userId: string) {
 
     const parentWallet = await getWalletByUserId(userId);
     const childWallets = await prisma.childWallet.findMany({
-        where: { parent_walletId: parentWallet.id }
+        where: { parentWalletId: parentWallet.id }
     });
 
     const totalWalletBalance = childWallets.reduce((sum, cw) => sum + Number(cw.balance), 0);
 
     const goals = await prisma.goal.aggregate({
         where: { child: { parentId: userId }, status: 'in_progress' },
-        _sum: { current_amount: true }
+        _sum: { currentAmount: true }
     });
 
-    const totalInGoals = Number(goals._sum.current_amount || 0);
+    const totalInGoals = Number(goals._sum?.currentAmount || 0);
 
     const result = {
         wallet_balance: totalWalletBalance,
