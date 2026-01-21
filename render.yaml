@@ -3,7 +3,7 @@ services:
     name: waya-backend
     runtime: node
     plan: free
-    buildCommand: pnpm install && pnpm exec prisma generate && pnpm build
+    buildCommand: pnpm install && pnpm exec prisma generate
     startCommand: pnpm start
     envVars:
       - key: NODE_ENV
