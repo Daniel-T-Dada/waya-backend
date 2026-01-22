@@ -98,6 +98,17 @@ export async function getDashboardStats(req: Request, res: Response) {
     }
 }
 
+export async function getWalletDashboard(req: Request, res: Response) {
+    try {
+        const userId = (req as any).user.id;
+        const dashboard = await walletService.getWalletDashboard(userId);
+        return res.json(dashboard);
+    } catch (err: any) {
+        return res.status(500).json({ error: err.message });
+    }
+}
+
+
 export async function getChildWallets(req: Request, res: Response) {
     try {
         const userId = (req as any).user.id;

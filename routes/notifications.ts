@@ -79,4 +79,20 @@ router.post('/:id/read', requireAuth, notificationController.markRead);
  */
 router.delete('/:id', requireAuth, notificationController.removeNotification);
 
+/**
+ * @swagger
+ * /notifications/clear-all:
+ *   delete:
+ *     summary: Clear all notifications
+ *     description: Delete all notifications for the authenticated user
+ *     tags: [Notifications]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: All notifications cleared
+ */
+router.delete('/clear-all', requireAuth, notificationController.clearAll);
+
 export default router;
+

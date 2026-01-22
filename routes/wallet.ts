@@ -164,6 +164,44 @@ router.get('/wallet/dashboard_stats', requireAuth, walletController.getDashboard
 
 /**
  * @swagger
+ * /familywallet/wallet/dashboard:
+ *   get:
+ *     summary: Get enhanced wallet dashboard with family balance and rewards breakdown
+ *     tags: [FamilyWallet]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Enhanced dashboard data with percentage changes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalFamilyBalance:
+ *                   type: number
+ *                   description: Total balance across parent and all children wallets
+ *                 percentageChange:
+ *                   type: number
+ *                   description: Percentage change in family balance (last 7 days vs previous 7 days)
+ *                 rewardsSent:
+ *                   type: number
+ *                   description: Total rewards from completed chores (last 7 days)
+ *                 rewardsSentChange:
+ *                   type: number
+ *                   description: Percentage change in rewards sent
+ *                 rewardsPending:
+ *                   type: number
+ *                   description: Total rewards from chores awaiting approval
+ *                 rewardsPendingChange:
+ *                   type: number
+ *                   description: Percentage change in pending rewards
+ */
+router.get('/wallet/dashboard', requireAuth, requireParent, walletController.getWalletDashboard);
+
+
+/**
+ * @swagger
  * /familywallet/wallet/earnings-chart-data:
  *   get:
  *     summary: Get earnings chart data

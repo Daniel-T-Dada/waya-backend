@@ -14,6 +14,7 @@ import settingsRoutes from './settings';
 import parentDashboardRoutes from './parentDashboard';
 import childDashboardRoutes from './childDashboard';
 import monitoringRoutes from './monitoring';
+import paymentRoutes from './payment';
 
 const router = Router();
 
@@ -36,5 +37,6 @@ router.use('/settings_waya', settingsRoutes);
 router.use('/parent', parentDashboardRoutes);
 router.use('/child', childDashboardRoutes);
 router.use('/monitoring', monitoringRoutes);
+router.use('/payments', paymentRoutes);
 
 export default router;
