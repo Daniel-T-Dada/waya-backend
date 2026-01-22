@@ -97,3 +97,14 @@ export async function deleteNotification(notificationId: string, userId?: string
         where: { id: notificationId }
     });
 }
+
+export async function clearAll(userId?: string, childId?: string) {
+    const where: any = {};
+    if (userId) where.userId = userId;
+    if (childId) where.childId = childId;
+
+    return prisma.notification.deleteMany({
+        where
+    });
+}
+

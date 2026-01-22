@@ -75,3 +75,21 @@ export async function removeNotification(req: Request, res: Response) {
         return res.status(400).json({ error: err.message });
     }
 }
+
+export async function clearAll(req: Request, res: Response) {
+    try {
+        const userId = (req as any).user.id;
+        const userType = (req as any).user.type;
+
+        if (userType === 'parent') {
+            await notificationService.clearAll(userId, undefined);
+        } else {
+            await notificationService.clearAll(undefined, userId);
+        }
+
+        return res.json({ message: 'All notifications cleared' });
+    } catch (err: any) {
+        return res.status(500).json({ error: err.message });
+    }
+}
+

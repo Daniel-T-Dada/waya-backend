@@ -371,3 +371,66 @@ export async function getChildEarnings(req: Request, res: Response) {
         return res.status(500).json({ error: 'Failed to fetch earnings data' });
     }
 }
+
+// Get child dashboard stats (level, earnings, streak, etc.)
+export async function getChildDashboardStatsController(req: Request, res: Response) {
+    try {
+        const { childId } = req.params;
+        const stats = await childService.getChildDashboardStats(childId);
+        return res.json(stats);
+    } catch (error: any) {
+        console.error('Error fetching child dashboard stats:', error);
+        return res.status(500).json({ error: 'Failed to fetch dashboard stats' });
+    }
+}
+
+// Get child earning meter stats
+export async function getChildEarningMeterController(req: Request, res: Response) {
+    try {
+        const { childId } = req.params;
+        const stats = await childService.getChildEarningMeter(childId);
+        return res.json(stats);
+    } catch (error: any) {
+        console.error('Error fetching earning meter:', error);
+        return res.status(500).json({ error: 'Failed to fetch earning meter data' });
+    }
+}
+
+// Get child earnings chart
+export async function getChildEarningsChartController(req: Request, res: Response) {
+    try {
+        const { childId } = req.params;
+        const { period = '7days' } = req.query;
+        const chart = await childService.getChildEarningsChart(childId, period as string);
+        return res.json(chart);
+    } catch (error: any) {
+        console.error('Error fetching earnings chart:', error);
+        return res.status(500).json({ error: 'Failed to fetch earnings chart' });
+    }
+}
+
+// Get child expense breakdown
+export async function getChildExpenseBreakdownController(req: Request, res: Response) {
+    try {
+        const { childId } = req.params;
+        const { period = '7days' } = req.query;
+        const breakdown = await childService.getChildExpenseBreakdown(childId, period as string);
+        return res.json(breakdown);
+    } catch (error: any) {
+        console.error('Error fetching expense breakdown:', error);
+        return res.status(500).json({ error: 'Failed to fetch expense breakdown' });
+    }
+}
+
+// Get redeemable rewards
+export async function getRedeemableRewardsController(req: Request, res: Response) {
+    try {
+        const { childId } = req.params;
+        const rewards = await childService.getRedeemableRewards(childId);
+        return res.json(rewards);
+    } catch (error: any) {
+        console.error('Error fetching redeemable rewards:', error);
+        return res.status(500).json({ error: 'Failed to fetch redeemable rewards' });
+    }
+}
+

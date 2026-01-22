@@ -35,6 +35,7 @@ model User {
   notifications Notification[]
   sessions      Session[]
   accounts      Account[]
+  payments      Payment[]
 
   @@map("user")
 }
@@ -144,18 +145,19 @@ model ChildWallet {
 }
 
 model Transaction {
-  id          String   @id @default(uuid())
-  type        String // 'credit', 'debit', 'transfer', 'reward'
-  amount      Decimal  @db.Decimal(10, 2)
-  status      String // 'pending', 'completed', 'cancelled', 'paid'
-  description String
-  childId     String?  @map("child_id")
-  child       Child?   @relation(fields: [childId], references: [id], onDelete: SetNull)
-  walletId    String   @map("wallet_id")
-  wallet      Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
-  choreId     String?  @map("chore_id") // For future chore integration
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(uuid())
+  type             String // 'credit', 'debit', 'transfer', 'reward'
+  amount           Decimal  @db.Decimal(10, 2)
+  status           String // 'pending', 'completed', 'cancelled', 'paid'
+  description      String
+  childId          String?  @map("child_id")
+  child            Child?   @relation(fields: [childId], references: [id], onDelete: SetNull)
+  walletId         String   @map("wallet_id")
+  wallet           Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  choreId          String?  @map("chore_id") // For future chore integration
+  paymentReference String?  @map("payment_reference") // Paystack payment reference
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@index([walletId])
   @@index([childId])
@@ -353,4 +355,27 @@ model LearningReward {
   @@index([childId])
   @@index([quizId])
   @@map("learning_reward")
+}
+
+model Payment {
+  id                String    @id @default(uuid())
+  userId            String    @map("user_id")
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reference         String    @unique // Paystack payment reference
+  amount            Decimal   @db.Decimal(10, 2)
+  currency          String    @default("NGN")
+  status            String    @default("pending") // pending, success, failed, abandoned
+  channel           String? // card, bank, ussd, etc.
+  paystackResponse  Json?     @map("paystack_response")
+  transactionId     String?   @unique @map("transaction_id") // Link to Transaction model
+  metadata          Json?
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  verifiedAt        DateTime? @map("verified_at")
+
+  @@index([userId])
+  @@index([reference])
+  @@index([status])
+  @@index([createdAt])
+  @@map("payment")
 }

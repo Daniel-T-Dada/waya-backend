@@ -320,6 +320,100 @@ export async function getDashboardStats(userId: string) {
     return result;
 }
 
+// Get enhanced wallet dashboard with percentage changes
+export async function getWalletDashboard(userId: string) {
+    const wallet = await getWalletByUserId(userId);
+
+    // Get all child wallets
+    const childWallets = await prisma.childWallet.findMany({
+        where: { parentWalletId: wallet.id }
+    });
+
+    // Calculate total family balance (parent + all children)
+    const childrenBalance = childWallets.reduce((sum, cw) => sum + Number(cw.balance), 0);
+    const totalFamilyBalance = Number(wallet.balance) + childrenBalance;
+
+    // Get current period (last 7 days) and previous period (7 days before that)
+    const now = new Date();
+    const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const previous7Days = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+
+    // Get rewards sent (completed chores) for current and previous periods
+    const rewardsSentCurrent = await prisma.chore.aggregate({
+        where: {
+            parentId: userId,
+            status: 'completed',
+            updatedAt: { gte: last7Days }
+        },
+        _sum: { amount: true }
+    });
+
+    const rewardsSentPrevious = await prisma.chore.aggregate({
+        where: {
+            parentId: userId,
+            status: 'completed',
+            updatedAt: { gte: previous7Days, lt: last7Days }
+        },
+        _sum: { amount: true }
+    });
+
+    // Get rewards pending (awaiting approval chores)
+    const rewardsPendingCurrent = await prisma.chore.aggregate({
+        where: {
+            parentId: userId,
+            status: 'awaiting_approval',
+            updatedAt: { gte: last7Days }
+        },
+        _sum: { amount: true }
+    });
+
+    const rewardsPendingPrevious = await prisma.chore.aggregate({
+        where: {
+            parentId: userId,
+            status: 'awaiting_approval',
+            updatedAt: { gte: previous7Days, lt: last7Days }
+        },
+        _sum: { amount: true }
+    });
+
+    // Calculate percentage changes
+    const rewardsSent = Number(rewardsSentCurrent._sum?.amount || 0);
+    const rewardsSentPrev = Number(rewardsSentPrevious._sum?.amount || 0);
+    const rewardsSentChange = rewardsSentPrev > 0
+        ? ((rewardsSent - rewardsSentPrev) / rewardsSentPrev) * 100
+        : 0;
+
+    const rewardsPending = Number(rewardsPendingCurrent._sum?.amount || 0);
+    const rewardsPendingPrev = Number(rewardsPendingPrevious._sum?.amount || 0);
+    const rewardsPendingChange = rewardsPendingPrev > 0
+        ? ((rewardsPending - rewardsPendingPrev) / rewardsPendingPrev) * 100
+        : 0;
+
+    // Get previous family balance for percentage change
+    const previousBalance = await prisma.transaction.aggregate({
+        where: {
+            walletId: wallet.id,
+            createdAt: { gte: previous7Days, lt: last7Days },
+            status: 'completed'
+        },
+        _sum: { amount: true }
+    });
+
+    const balanceChange = Number(previousBalance._sum.amount || 0) > 0
+        ? ((totalFamilyBalance - Number(previousBalance._sum.amount || 0)) / Number(previousBalance._sum.amount || 0)) * 100
+        : 0;
+
+    return {
+        totalFamilyBalance,
+        percentageChange: Math.round(balanceChange * 100) / 100,
+        rewardsSent,
+        rewardsSentChange: Math.round(rewardsSentChange * 100) / 100,
+        rewardsPending,
+        rewardsPendingChange: Math.round(rewardsPendingChange * 100) / 100
+    };
+}
+
+
 // Get child wallets
 export async function getChildWallets(userId: string) {
     const cacheKey = `child_wallets:${userId}`;
