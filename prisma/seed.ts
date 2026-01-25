@@ -1146,6 +1146,108 @@ async function main() {
         });
     }
 
+    // ========================================
+    // HISTORICAL DATA FOR TRENDS
+    // ========================================
+    console.log('📉 Creating historical trends (Transactions)...');
+
+    // Create random transactions for the last 6 months
+    const today = new Date();
+    const categories = ['Transfers', 'Allowance', 'Food', 'Transport', 'Bills', 'Subscription'];
+    const trendTransactions = [];
+
+    for (let i = 1; i <= 6; i++) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 15);
+
+        // 1. Monthly Income (Credit)
+        trendTransactions.push({
+            type: 'credit',
+            amount: 50000 + (Math.random() * 20000), // 50k - 70k income
+            status: 'completed',
+            description: 'Wallet Funding',
+            walletId: parent1Wallet.id,
+            createdAt: d,
+            updatedAt: d
+        });
+
+        // 2. Variable Expenses (Debit)
+        const numExpenses = 3 + Math.floor(Math.random() * 4); // 3-6 expenses per month
+        for (let j = 0; j < numExpenses; j++) {
+            const amount = 2000 + (Math.random() * 8000); // 2k - 10k
+            const category = categories[Math.floor(Math.random() * categories.length)];
+            const desc = category === 'Transfers' ? `Transfer to ${child1.name}` : `${category} Payment`;
+
+            trendTransactions.push({
+                type: 'debit',
+                amount: amount,
+                status: 'completed',
+                description: desc,
+                walletId: parent1Wallet.id,
+                childId: category === 'Transfers' ? child1.id : null,
+                createdAt: new Date(d.getTime() + (j * 86400000)), // Spread expenses over days
+                updatedAt: new Date(d.getTime() + (j * 86400000))
+            });
+        }
+    }
+
+    for (const t of trendTransactions) {
+        await prisma.transaction.create({ data: t });
+    }
+    console.log(`   ✅ Created ${trendTransactions.length} historical transactions for trends`);
+
+    // ========================================
+    // ACHIEVEMENTS
+    // ========================================
+    console.log('🏅 Creating achievements...');
+
+    // Helper for achievements
+    const daysAgo = (days: number) => {
+        const date = new Date();
+        date.setDate(date.getDate() - days);
+        return date;
+    };
+
+    await prisma.achievement.createMany({
+        data: [
+            {
+                childId: child1.id, // First ParentChildOne
+                type: 'chore_streak',
+                title: '5-Day Streak',
+                description: 'Completed chores for 5 consecutive days',
+                earnedAt: daysAgo(2)
+            },
+            {
+                childId: child1.id,
+                type: 'quiz_master',
+                title: 'Quiz Whiz',
+                description: 'Scored 100% on a Math quiz',
+                earnedAt: daysAgo(5)
+            },
+            {
+                childId: child1.id,
+                type: 'savings_goal',
+                title: 'First Goal',
+                description: 'Completed first savings goal',
+                earnedAt: daysAgo(10)
+            },
+            {
+                childId: child2.id, // First ParentChildTwo
+                type: 'early_bird',
+                title: 'Early Bird',
+                description: 'Completed chores before 9 AM',
+                earnedAt: daysAgo(1)
+            },
+            {
+                childId: child3.id, // First ParentChildThree
+                type: 'top_earner',
+                title: 'Top Earner',
+                description: 'Earned most rewards this week',
+                earnedAt: daysAgo(3)
+            }
+        ]
+    });
+    console.log(`   ✅ Created 5 achievements`);
+
     console.log('✅ Database seeding completed successfully!');
     console.log('\n📊 Summary:');
 
@@ -1164,6 +1266,7 @@ async function main() {
     const totalQuestions = await prisma.question.count();
     const totalQuizAttempts = await prisma.quizAttempt.count();
     const totalLearningRewards = await prisma.learningReward.count();
+    const totalAchievements = await prisma.achievement.count();
 
     console.log(`   - Parents: ${totalParents}`);
     console.log(`   - Children: ${totalChildren}`);
@@ -1179,6 +1282,7 @@ async function main() {
     console.log(`   - Quiz Questions: ${totalQuestions}`);
     console.log(`   - Quiz Attempts: ${totalQuizAttempts}`);
     console.log(`   - Learning Rewards: ${totalLearningRewards}`);
+    console.log(`   - Achievements: ${totalAchievements}`);
     console.log(`   - Notifications: ${totalNotifications}`);
 }
 

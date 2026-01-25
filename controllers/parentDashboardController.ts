@@ -5,6 +5,8 @@ import * as walletService from '../services/walletService';
 import * as transactionService from '../services/transactionService';
 import * as notificationService from '../services/notificationService';
 import * as userService from '../services/userService';
+import * as insightService from '../services/insightService';
+import * as achievementService from '../services/achievementService';
 
 /**
  * Get aggregated dashboard data for parent
@@ -113,7 +115,7 @@ export async function getParentWallet(req: Request, res: Response) {
         // Fetch all data in parallel
         const [wallet, children] = await Promise.all([
             walletService.getWalletByUserId(parentId),
-            childService.getChildrenByParent(parentId)
+            childService.getChildrenWithWallets(parentId)
         ]);
 
         // Get transactions if wallet exists
@@ -123,20 +125,20 @@ export async function getParentWallet(req: Request, res: Response) {
         const income = transactions.filter((t: any) => t.type === 'credit');
         const expenses = transactions.filter((t: any) => t.type === 'debit');
 
-        // TODO: Get children with their wallet balances
-        const childrenWithAllowances = children.map((child: any) => ({
-            id: child.id,
-            name: child.name,
-            allowance: 0, // TODO: Get from child wallet
-            spent: 0, // TODO: Calculate from transactions
-            balance: 0 // TODO: Get from child wallet
-        }));
+        // Get children with their wallet balances
+        const childrenWithAllowances = children.map((child: any) => {
+            const activeAllowance = child.allowances?.find((a: any) => a.status === 'active');
+            return {
+                id: child.id,
+                name: child.name,
+                allowance: activeAllowance ? Number(activeAllowance.amount) : 0,
+                spent: Number(child.wallet?.totalSpent || 0),
+                balance: Number(child.wallet?.balance || 0)
+            };
+        });
 
-        // TODO: Calculate spending insights
-        const insights = {
-            topCategories: [],
-            monthlyTrend: []
-        };
+        // Calculate spending insights
+        const insights = await insightService.getWalletInsights(parentId);
 
         return res.json({
             balance: {
@@ -182,39 +184,133 @@ export async function getParentInsights(req: Request, res: Response) {
         // Calculate task trends (last 30 days)
         const now = new Date();
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
         const recentTasks = tasks.filter(t => new Date(t.createdAt) >= thirtyDaysAgo);
+
+        // Group tasks by day (last 7 days)
+        const dailyMap = new Map<string, { completed: number, pending: number }>();
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+            const key = d.toISOString().split('T')[0];
+            dailyMap.set(key, { completed: 0, pending: 0 });
+        }
+
+        recentTasks.filter(t => new Date(t.createdAt) >= sevenDaysAgo).forEach((t: any) => {
+            const key = new Date(t.createdAt).toISOString().split('T')[0];
+            if (dailyMap.has(key)) {
+                const data = dailyMap.get(key)!;
+                if (t.status === 'completed') data.completed++;
+                else data.pending++;
+            }
+        });
+
         const taskTrends = {
-            daily: [], // TODO: Group by day
-            weekly: [], // TODO: Group by week
-            monthly: [] // TODO: Group by month
+            daily: Array.from(dailyMap.entries()).map(([date, data]) => ({
+                date,
+                completed: data.completed,
+                pending: data.pending
+            })),
+            weekly: [], // Simplified for now
+            monthly: [] // Simplified for now
         };
 
-        // Calculate spending patterns
+        // Calculate spending by child
+        const childSpendingMap = new Map<string, number>();
+        children.forEach((child: any) => childSpendingMap.set(child.id, 0));
+
+        (transactions as any[]).filter(t => t.type === 'debit' && t.childId).forEach(t => {
+            const current = childSpendingMap.get(t.childId) || 0;
+            childSpendingMap.set(t.childId, current + Number(t.amount));
+        });
+
+        // Calculate spending by category
+        const categoryMap = new Map<string, number>();
+        (transactions as any[]).filter(t => t.type === 'debit').forEach(t => {
+            const desc = t.description.toLowerCase();
+            let cat = 'Other';
+            if (desc.includes('transfer')) cat = 'Transfers';
+            else if (desc.includes('allowance')) cat = 'Allowance';
+            else if (desc.includes('food') || desc.includes('grocery')) cat = 'Food';
+
+            const current = categoryMap.get(cat) || 0;
+            categoryMap.set(cat, current + Number(t.amount));
+        });
+        // Calculate trends (Monthly spending for last 6 months)
+        const trendMap = new Map<string, number>();
+        const months: string[] = [];
+
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const key = d.toISOString().slice(0, 7); // YYYY-MM
+            const monthName = d.toLocaleString('default', { month: 'short' });
+            trendMap.set(key, 0);
+            months.push(monthName);
+        }
+
+        (transactions as any[]).filter(t => t.type === 'debit').forEach(t => {
+            const key = new Date(t.createdAt).toISOString().slice(0, 7);
+            if (trendMap.has(key)) {
+                trendMap.set(key, (trendMap.get(key) || 0) + Number(t.amount));
+            }
+        });
+
         const spendingPatterns = {
-            byCategory: [], // TODO: Group by category
+            byCategory: Array.from(categoryMap.entries()).map(([category, amount]) => ({
+                category,
+                amount
+            })),
             byChild: children.map((child: any) => ({
                 childId: child.id,
                 childName: child.name,
-                totalSpent: 0 // TODO: Calculate from transactions
+                totalSpent: childSpendingMap.get(child.id) || 0
             })),
-            trends: [] // TODO: Calculate trends
+            trends: Array.from(trendMap.entries()).map(([key, amount], index) => ({
+                month: months[index],
+                amount,
+                change: index > 0 ?
+                    Math.round(((amount - (trendMap.get(Array.from(trendMap.keys())[index - 1]) || 1)) / (trendMap.get(Array.from(trendMap.keys())[index - 1]) || 1)) * 100)
+                    : 0
+            }))
         };
 
-        // Calculate children performance
-        const childrenPerformance = children.map((child: any) => {
+        // Calculate children performance with achievements
+        const childrenPerformance = await Promise.all(children.map(async (child: any) => {
             const childTasks = tasks.filter((t: any) => t.child?.id === child.id);
-            const completed = childTasks.filter((t: any) => t.status === 'completed').length;
+            const completedTasks = childTasks.filter((t: any) => t.status === 'completed');
+            const completed = completedTasks.length;
+
+            // Calculate average completion time
+            let avgTime = 0;
+            if (completedTasks.length > 0) {
+                const totalTime = completedTasks.reduce((sum: number, t: any) => {
+                    if (t.completedAt) {
+                        const duration = new Date(t.completedAt).getTime() - new Date(t.createdAt).getTime();
+                        return sum + duration;
+                    }
+                    return sum;
+                }, 0);
+                avgTime = Math.round(totalTime / completedTasks.length / (1000 * 60 * 60 * 24)); // days
+            }
+
+            // Fetch achievements
+            const achievements = await achievementService.getChildAchievements(child.id);
 
             return {
                 childId: child.id,
                 name: child.name,
                 tasksCompleted: completed,
                 completionRate: childTasks.length > 0 ? Math.round((completed / childTasks.length) * 100) : 0,
-                averageTime: 0, // TODO: Calculate average completion time
-                achievements: [] // TODO: Get achievements
+                averageTime: avgTime,
+                achievements: achievements.map(a => ({
+                    id: a.id,
+                    type: a.type,
+                    title: a.title,
+                    description: a.description,
+                    earnedAt: a.earnedAt
+                }))
             };
-        });
+        }));
 
         return res.json({
             taskTrends,

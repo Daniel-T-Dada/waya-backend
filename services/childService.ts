@@ -86,6 +86,18 @@ export async function getChildrenByParent(parentId: string) {
     });
 }
 
+// Get all children for a parent with wallet and allowances (for dashboard)
+export async function getChildrenWithWallets(parentId: string) {
+    return prisma.child.findMany({
+        where: { parentId: parentId },
+        include: {
+            wallet: true,
+            allowances: true
+        },
+        orderBy: { createdAt: 'desc' }
+    });
+}
+
 // Get a single child by ID (with ownership verification)
 export async function getChildById(childId: string, parentId: string) {
     const child = await prisma.child.findUnique({

@@ -121,3 +121,72 @@ export async function getRecentActivities(parentId: string) {
 
     return { activities };
 }
+
+export async function getWalletInsights(parentId: string) {
+    const wallet = await prisma.wallet.findUnique({
+        where: { userId: parentId }
+    });
+
+    if (!wallet) return { topCategories: [], monthlyTrend: [] };
+
+    const transactions = await prisma.transaction.findMany({
+        where: { walletId: wallet.id },
+        orderBy: { createdAt: 'desc' }
+    });
+
+    const expenses = transactions.filter(t => t.type === 'debit');
+
+    // 1. Top Categories
+    const categoryMap = new Map<string, number>();
+
+    for (const t of expenses) {
+        let cat = 'Other';
+        const desc = t.description.toLowerCase();
+
+        if (desc.includes('transfer')) cat = 'Transfers';
+        else if (desc.includes('allowance')) cat = 'Allowance';
+        else if (desc.includes('subscription')) cat = 'Subscription';
+        else if (desc.includes('food') || desc.includes('grocery')) cat = 'Food';
+        else if (desc.includes('transport')) cat = 'Transport';
+        else if (desc.includes('bill') || desc.includes('utility')) cat = 'Bills';
+
+        const current = categoryMap.get(cat) || 0;
+        categoryMap.set(cat, current + Number(t.amount));
+    }
+
+    const topCategories = Array.from(categoryMap.entries())
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+
+    // 2. Monthly Trend (Last 6 months)
+    const trendMap = new Map<string, { income: number, expense: number }>();
+    const months = [];
+    const today = new Date();
+
+    // Initialize last 6 months
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+        const key = d.toISOString().slice(0, 7); // YYYY-MM
+        const monthName = d.toLocaleString('default', { month: 'short' });
+        trendMap.set(key, { income: 0, expense: 0 });
+        months.push({ key, month: monthName });
+    }
+
+    for (const t of transactions) {
+        const key = t.createdAt.toISOString().slice(0, 7);
+        if (trendMap.has(key)) {
+            const current = trendMap.get(key)!;
+            if (t.type === 'credit') current.income += Number(t.amount);
+            else current.expense += Number(t.amount);
+        }
+    }
+
+    const monthlyTrend = months.map(m => ({
+        month: m.month,
+        income: trendMap.get(m.key)!.income,
+        expense: trendMap.get(m.key)!.expense
+    }));
+
+    return { topCategories, monthlyTrend };
+}
