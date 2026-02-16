@@ -105,6 +105,7 @@ model Child {
   quizAttempts    QuizAttempt[]
   learningRewards LearningReward[]
   dailyActivities DailyActivity[]
+  achievements    Achievement[]
   currentStreak   Int              @default(0) @map("current_streak")
   lastActiveAt    DateTime?        @map("last_active_at")
 
@@ -378,4 +379,17 @@ model Payment {
   @@index([status])
   @@index([createdAt])
   @@map("payment")
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  childId     String   @map("child_id")
+  child       Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  type        String // 'chore_streak', 'savings_goal', 'quiz_master', 'early_bird', 'top_earner'
+  title       String
+  description String
+  earnedAt    DateTime @default(now()) @map("earned_at")
+
+  @@index([childId])
+  @@map("achievement")
 }
