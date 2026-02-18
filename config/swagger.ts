@@ -33,8 +33,10 @@ const options: swaggerJsdoc.Options = {
         ],
         servers: [
             {
-                url: 'http://localhost:5000/api',
-                description: 'Development server',
+                url: process.env.NODE_ENV === 'production'
+                    ? 'https://api.waya.name.ng/api'
+                    : 'http://localhost:5000/api',
+                description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
             },
         ],
     },
