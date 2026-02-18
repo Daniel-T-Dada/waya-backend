@@ -14,6 +14,8 @@ import { createServer } from 'http';
 import { initSocket } from './utils/socket';
 
 const app = express();
+// Enable trust proxy for Render deployment
+app.set('trust proxy', 1);
 const httpServer = createServer(app);
 
 // Initialize Socket.io
